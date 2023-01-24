@@ -1,0 +1,67 @@
+import json
+import requests
+import psycopg2
+import boto3  
+
+def lambda_handler(event, context):
+    # TODO implement
+    
+# API get request connection objects with S3 using boto3 dependency
+   
+population = requests.get("https://api.census.gov/data/2021/pep/population")
+s3 = boto3.resource('s3')
+s3object = s3.Object('torqata-pizza-delivery-bucket-s3', population.json())
+s3object.put(
+    Body=(bytes(json.dumps(json_data).encode('UTF-8')))
+) 
+
+def redshiftputdata(loc):
+    con = psycopg2.connect(dbname='***',
+                       host='***',
+                       port='***', user='***', password='***')
+    cur = conn.cursor()
+    # Begin your transaction
+    cur.execute("begin;")
+    cur.execute(
+        "COPY public.executed_user_rules FROM" + loc + "CREDENTIALS 'aws_iam_role=arn:aws:iam::***' json 'auto';")
+    # Commit your transaction
+    cur.execute("commit;")
+    print("executed user rules copy executed fine!")
+def put_data_into_s3(data, bucket):
+    putbucket = bucket
+    key = "medium"
+    client = boto3.client('s3')
+    client.put_object(Body=data, Bucket=putbucket, Key=key)
+    return data
+def lambda_handler(event, context):
+    print(event)
+    # For api gateway post.
+    response = "default"
+    if ("rawPath" in event and event.get("rawPath") == "/postnames"):
+        body = event.get("body")
+        dict = json.loads(body)
+        dict = json.dumps(dict)
+        print(dict)
+        response = put_data_into_s3(dict, "test-medium-ankita")
+    
+    # handle data coming from s3.
+    if("Records" in event):
+        records = event["Records"]
+        for record in records:
+            s3_name = record["s3"]["bucket"]["name"]
+            key = record["s3"]["object"]["key"]
+            output = ""
+            if (s3_name == "test-medium-ankita" and key.find(".json") != -1):
+                loc = "'s3://test-medium-ankita/%s'" % (key)
+                output = redshiftputdata(loc)
+                print("output: ", output)
+    return {
+        'statusCode': 200,
+        'body': json.dumps(response)
+    }
+    except:
+        print('Closing lambda function')
+        return {
+                'statusCode': 400,
+                'body': json.dumps('Error')
+    }
