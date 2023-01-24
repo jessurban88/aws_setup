@@ -57,6 +57,7 @@ SELECT
   ,type
   ,state
 FROM dim.orders
+WHERE date >= DATEADD(month,-12,GETDATE())
 ORDER BY total, state DESC
 )
 
