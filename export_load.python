@@ -42,7 +42,7 @@ def lambda_handler(event, context):
         dict = json.loads(body)
         dict = json.dumps(dict)
         print(dict)
-        response = put_data_into_s3(dict, "test-medium-ankita")
+        response = put_data_into_s3(dict, "torqata-bucket-s3")
     
     # handle data coming from s3.
     if("Records" in event):
@@ -51,8 +51,8 @@ def lambda_handler(event, context):
             s3_name = record["s3"]["bucket"]["name"]
             key = record["s3"]["object"]["key"]
             output = ""
-            if (s3_name == "test-medium-ankita" and key.find(".json") != -1):
-                loc = "'s3://test-medium-ankita/%s'" % (key)
+            if (s3_name == "torqata-bucket-s3" and key.find(".json") != -1):
+                loc = "'s3://torqata-bucket-s3/%s'" % (key)
                 output = redshiftputdata(loc)
                 print("output: ", output)
     return {
